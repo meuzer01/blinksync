@@ -1,7 +1,7 @@
 const PLAYER_KEY = 'blind-sync-player';
 const GRID_SIZE = 25;
 const GAME_SECONDS = 120;
-const MAX_CHARS = 200;
+const MAX_CHARS = 50;
 
 function createEmptyGrid() {
   return Array.from({ length: GRID_SIZE }, () => false);

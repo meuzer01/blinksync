@@ -5,7 +5,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const GRID_SIZE = 25;
 const GAME_SECONDS = 120;
-const MAX_CHARS = 200;
+const MAX_CHARS = 50;
 
 const patterns = [
   [2, 7, 12, 17, 22, 11, 13],

@@ -90,7 +90,7 @@
             <article>
               <h2>Objectif</h2>
               <p>
-                Reproduire exactement la forme en moins de deux minutes avec 200
+                Reproduire exactement la forme en moins de deux minutes avec 50
                 caracteres d'instructions maximum.
               </p>
             </article>
@@ -198,13 +198,13 @@
             <section class="instructions">
               <div class="instruction-head">
                 <h2>Instructions</h2>
-                <span v-if="isDesigner">{{ charsLeft }}/200</span>
+                <span v-if="isDesigner">{{ charsLeft }}/50</span>
               </div>
               <textarea
                 v-if="isDesigner"
                 v-model="draftInstruction"
                 :disabled="currentRoom.status !== 'playing'"
-                maxlength="200"
+                maxlength="50"
                 placeholder="Ex: colonne 2, lignes 1 a 4, puis diagonale vers la droite..."
                 @beforeinput="countInstructionInput"
                 @input="sendInstruction"
