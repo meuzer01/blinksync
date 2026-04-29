@@ -1,0 +1,16 @@
+{
+  "name": "exo3node",
+  "version": "1.0.0",
+  "description": "Exercice Node.js avec Express et site statique",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}

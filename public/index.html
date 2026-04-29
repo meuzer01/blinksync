@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blind Sync</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Space+Grotesk:wght@700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js" defer></script>
+    <script src="script.js" defer></script>
+  </head>
+  <body>
+    <div id="app" v-cloak>
+      <header class="app-header">
+        <button class="brand" type="button" @click="view = 'home'">
+          <span class="brand-mark">BS</span>
+          <span>
+            <strong>Blind Sync</strong>
+            <small>challenge cooperatif</small>
+          </span>
+        </button>
+
+        <nav class="main-nav" aria-label="Navigation principale">
+          <button :class="{ active: view === 'home' }" @click="view = 'home'">Accueil</button>
+          <button :class="{ active: view === 'rules' }" @click="view = 'rules'">Regles</button>
+          <button :class="{ active: view === 'rooms' }" @click="view = 'rooms'">Rooms</button>
+          <button :class="{ active: view === 'contact' }" @click="view = 'contact'">Contact</button>
+        </nav>
+      </header>
+
+      <main>
+        <p class="error-banner" v-if="error">{{ error }}</p>
+
+        <section v-if="view === 'home'" class="screen home-screen">
+          <div class="hero-copy">
+            <p class="eyebrow">Vue.js + Node.js + temps reel</p>
+            <h1>Reproduisez une forme que seuls les mots peuvent decrire.</h1>
+            <p>
+              Un Designer voit le modele. Les Builders ne voient que leur grille
+              et doivent construire la bonne forme avec des instructions limitees.
+            </p>
+            <div class="hero-actions">
+              <button class="primary" @click="createRoom">Creer une room</button>
+              <button class="secondary" @click="view = 'rooms'">Rejoindre</button>
+            </div>
+          </div>
+
+          <div class="demo-board" aria-label="Apercu du jeu">
+            <div class="mini-panel">
+              <span>Modele Designer</span>
+              <div class="mini-grid">
+                <span v-for="(cell, index) in previewShape" :key="'m' + index" :class="{ filled: cell }"></span>
+              </div>
+            </div>
+            <div class="mini-panel">
+              <span>Grille Builders</span>
+              <div class="mini-grid">
+                <span
+                  v-for="(cell, index) in previewBuild"
+                  :key="'b' + index"
+                  :class="{ filled: cell }"
+                ></span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section v-else-if="view === 'rules'" class="screen text-screen">
+          <h1>Regles du jeu</h1>
+          <div class="rules-grid">
+            <article>
+              <h2>Designer</h2>
+              <p>
+                Le createur de la room voit la forme tiree au hasard et la grille
+                remplie par les Builders.
+              </p>
+            </article>
+            <article>
+              <h2>Builders</h2>
+              <p>
+                Les joueurs qui rejoignent ne voient pas le modele. Ils modifient
+                ensemble la grille de resultat.
+              </p>
+            </article>
+            <article>
+              <h2>Objectif</h2>
+              <p>
+                Reproduire exactement la forme en moins de deux minutes avec 200
+                caracteres d'instructions maximum.
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <section v-else-if="view === 'contact'" class="screen text-screen compact">
+          <h1>Contactez-nous</h1>
+          <form class="contact-form" @submit.prevent="sendContact">
+            <label>
+              Nom
+              <input v-model.trim="contact.name" required placeholder="Votre nom" />
+            </label>
+            <label>
+              Message
+              <textarea v-model.trim="contact.message" required placeholder="Votre message"></textarea>
+            </label>
+            <button class="primary" type="submit">Envoyer</button>
+            <p class="notice" v-if="contact.sent">Message pret a etre envoye.</p>
+          </form>
+        </section>
+
+        <section v-else-if="view === 'rooms'" class="screen rooms-screen">
+          <div class="section-title">
+            <div>
+              <p class="eyebrow">Rooms multijoueurs</p>
+              <h1>Choisis une partie</h1>
+            </div>
+            <button class="primary" @click="createRoom">Creer une room</button>
+          </div>
+
+          <div class="join-box">
+            <input v-model.trim="joinCode" maxlength="6" placeholder="Code room" />
+            <button class="secondary" @click="joinRoom(joinCode)">Rejoindre par code</button>
+          </div>
+
+          <div class="room-list" v-if="roomList.length">
+            <article v-for="room in roomList" :key="room.id" class="room-item">
+              <div>
+                <strong>{{ room.id }}</strong>
+                <span>{{ room.players.length }} joueur(s) - {{ statusLabel(room.status) }}</span>
+              </div>
+              <button class="secondary" @click="joinRoom(room.id)">Entrer</button>
+            </article>
+          </div>
+          <p class="empty-state" v-else>Aucune room active pour le moment.</p>
+        </section>
+
+        <section v-else-if="view === 'game' && currentRoom" class="game-layout">
+          <aside class="side-panel">
+            <div>
+              <p class="eyebrow">Room {{ currentRoom.id }}</p>
+              <h1>{{ roleLabel }}</h1>
+            </div>
+            <div class="stats">
+              <span>{{ formattedTime }}</span>
+              <span>{{ charsLeft }} caracteres</span>
+              <span>{{ currentRoom.players.length }} joueur(s)</span>
+            </div>
+            <div class="players">
+              <strong>Equipe</strong>
+              <span v-for="player in currentRoom.players" :key="player.id">
+                {{ player.name }} - {{ player.role }}
+              </span>
+            </div>
+            <button class="primary" v-if="isDesigner && currentRoom.status === 'waiting'" @click="startGame">
+              Lancer
+            </button>
+            <button class="secondary" @click="leaveRoom">Quitter</button>
+            <p class="notice" v-if="currentRoom.message">{{ currentRoom.message }}</p>
+          </aside>
+
+          <div class="play-area">
+            <div class="board-pair">
+              <section class="board-section" v-if="isDesigner">
+                <h2>Modele</h2>
+                <div class="grid">
+                  <button
+                    v-for="(cell, index) in currentRoom.target"
+                    :key="'target' + index"
+                    type="button"
+                    disabled
+                    :class="{ filled: cell }"
+                    :aria-label="'Modele cellule ' + (index + 1)"
+                  ></button>
+                </div>
+              </section>
+
+              <section class="board-section">
+                <h2>Resultat</h2>
+                <div class="grid">
+                  <button
+                    v-for="(cell, index) in currentRoom.grid"
+                    :key="'grid' + index"
+                    type="button"
+                    :disabled="!canEditGrid"
+                    :class="{ filled: cell }"
+                    @click="toggleCell(index)"
+                    :aria-label="'Resultat cellule ' + (index + 1)"
+                  ></button>
+                </div>
+              </section>
+            </div>
+
+            <section class="instructions">
+              <div class="instruction-head">
+                <h2>Instructions</h2>
+                <span v-if="isDesigner">{{ charsLeft }}/200</span>
+              </div>
+              <textarea
+                v-if="isDesigner"
+                v-model="draftInstruction"
+                :disabled="currentRoom.status !== 'playing'"
+                maxlength="200"
+                placeholder="Ex: colonne 2, lignes 1 a 4, puis diagonale vers la droite..."
+                @input="sendInstruction"
+              ></textarea>
+              <div class="instruction-log">
+                <p v-if="!currentRoom.instructions.length" class="empty-instruction">
+                  Aucune instruction pour le moment.
+                </p>
+                <p v-for="item in currentRoom.instructions" :key="item.id">
+                  <strong>{{ item.author }}</strong>
+                  {{ item.text }}
+                </p>
+              </div>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>
