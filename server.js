@@ -150,7 +150,8 @@ app.post('/api/rooms/:id/instruction', (req, res) => {
   if (!room) return;
 
   const text = String(req.body.text || '').slice(0, MAX_CHARS);
-  room.usedChars = text.length;
+  const addedChars = Math.max(0, Number(req.body.addedChars) || 0);
+  room.usedChars = Math.min(MAX_CHARS, room.usedChars + addedChars);
   room.instructions = [{
     id: `I-${createId()}`,
     author: req.body.playerName,

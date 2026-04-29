@@ -206,6 +206,7 @@
                 :disabled="currentRoom.status !== 'playing'"
                 maxlength="200"
                 placeholder="Ex: colonne 2, lignes 1 a 4, puis diagonale vers la droite..."
+                @beforeinput="countInstructionInput"
                 @input="sendInstruction"
               ></textarea>
               <div class="instruction-log">

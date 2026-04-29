@@ -58,6 +58,8 @@ document.addEventListener('DOMContentLoaded', () => {
         joinCode: '',
         currentRoomId: null,
         draftInstruction: '',
+        lastInstructionText: '',
+        pendingInstructionChars: 0,
         timerId: null,
         pollId: null,
         now: Date.now(),
@@ -224,7 +226,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const data = await api(`/api/rooms/${room.id}/start`, { method: 'POST' });
         this.draftInstruction = '';
+        this.lastInstructionText = '';
+        this.pendingInstructionChars = 0;
         this.applyServerState(data);
+      },
+
+      countInstructionInput(event) {
+        const room = this.currentRoom;
+        if (!room || !this.isDesigner || room.status !== 'playing') {
+          return;
+        }
+
+        if (event.inputType?.startsWith('delete')) {
+          return;
+        }
+
+        let addedChars = event.data?.length || 0;
+        if (event.inputType === 'insertLineBreak') {
+          addedChars = 1;
+        }
+        if (event.inputType === 'insertFromPaste') {
+          addedChars = event.clipboardData?.getData('text')?.length || addedChars;
+        }
+
+        if (!addedChars) {
+          return;
+        }
+
+        if (addedChars > this.charsLeft) {
+          event.preventDefault();
+          return;
+        }
+
+        this.pendingInstructionChars += addedChars;
       },
 
       async sendInstruction() {
@@ -234,9 +268,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const text = this.draftInstruction.slice(0, MAX_CHARS);
+        const fallbackAddedChars = Math.max(0, text.length - this.lastInstructionText.length);
+        const addedChars = this.pendingInstructionChars || fallbackAddedChars;
+        this.pendingInstructionChars = 0;
+        this.lastInstructionText = text;
+
         const data = await api(`/api/rooms/${room.id}/instruction`, {
           method: 'POST',
-          body: JSON.stringify({ text, playerName: this.player.name })
+          body: JSON.stringify({ text, addedChars, playerName: this.player.name })
         });
         this.applyServerState(data);
       },
